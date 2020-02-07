@@ -64,6 +64,9 @@ docker build --tag=$DOCKER_TAG \
              --build-arg UID=$DOCKER_UID \
              --build-arg PASSWD=$DOCKER_PASSWD \
              .
+
+
+
 # Launch container with current directory mounted
 docker run --rm --name finn_dev -it \
 -e "XILINX_VIVADO=$VIVADO_PATH" \
@@ -74,6 +77,8 @@ docker run --rm --name finn_dev -it \
 -v $SCRIPTPATH/cnpy:/workspace/cnpy \
 -v $SCRIPTPATH/finn-hlslib:/workspace/finn-hlslib \
 -v $SCRIPTPATH/pyverilator:/workspace/pyverilator \
+-v $SCRIPTPATH/../pytorch:/workspace/pytorch \
+-v /mnt/data0/Xilinx:/mnt/data0/Xilinx \
 -v $VIVADO_PATH:$VIVADO_PATH \
 -e VIVADO_PATH=$VIVADO_PATH \
 -p 8888:8888 -p 8081:8081 \

@@ -23,6 +23,10 @@ ENV PYTHONPATH "${PYTHONPATH}:/workspace/finn/src"
 ENV PYTHONPATH "${PYTHONPATH}:/workspace/brevitas_cnv_lfc/training_scripts"
 ENV PYTHONPATH "${PYTHONPATH}:/workspace/brevitas"
 ENV PYTHONPATH "${PYTHONPATH}:/workspace/pyverilator"
+ENV PYTHONPATH "${PYTHONPATH}:/workspace/pytorch"
+ENV PYTHONPATH "${PYTHONPATH}:/workspace/pytorch/build/lib.linux-x86_64-3.7"
+ENV LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:/workspace/pytorch/build/lib"
+
 
 ARG GID
 ARG GNAME
