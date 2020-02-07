@@ -7,6 +7,7 @@ import onnx.numpy_helper as nph
 import torch
 from models.LFC import LFC
 
+import finn
 import finn.core.onnx_exec as oxe
 from finn.core.modelwrapper import ModelWrapper
 from finn.transformation.batchnorm_to_affine import BatchNormToAffine
@@ -17,9 +18,8 @@ export_onnx_path = "test_output_lfc.onnx"
 transformed_onnx_path = "test_output_lfc_transformed.onnx"
 # TODO get from config instead, hardcoded to Docker path for now
 trained_lfc_checkpoint = (
-    "/workspace/brevitas_cnv_lfc/pretrained_models/LFC_1W1A/checkpoints/best.tar"
+    "%s/brevitas_cnv_lfc/pretrained_models/LFC_1W1A/checkpoints/best.tar"%finn.WS
 )
-
 
 def test_batchnorm_to_affine():
     lfc = LFC(weight_bit_width=1, act_bit_width=1, in_bit_width=1)
@@ -28,8 +28,8 @@ def test_batchnorm_to_affine():
     bo.export_finn_onnx(lfc, (1, 1, 28, 28), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     model = model.transform(InferShapes())
-    model = model.transform(FoldConstants())
-    new_model = model.transform(BatchNormToAffine())
+    # model = model.transform(FoldConstants())
+    # new_model = model.transform(BatchNormToAffine())
     # load one of the test vectors
     raw_i = get_data("finn", "data/onnx/mnist-conv/test_data_set_0/input_0.pb")
     input_tensor = onnx.load_tensor_from_string(raw_i)

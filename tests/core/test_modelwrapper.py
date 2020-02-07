@@ -4,6 +4,7 @@ from collections import Counter
 import brevitas.onnx as bo
 import numpy as np
 import torch
+import finn
 from models.LFC import LFC
 
 from finn.core.modelwrapper import ModelWrapper
@@ -11,7 +12,7 @@ from finn.core.modelwrapper import ModelWrapper
 export_onnx_path = "test_output_lfc.onnx"
 # TODO get from config instead, hardcoded to Docker path for now
 trained_lfc_checkpoint = (
-    "/workspace/brevitas_cnv_lfc/pretrained_models/LFC_1W1A/checkpoints/best.tar"
+    "%s/brevitas_cnv_lfc/pretrained_models/LFC_1W1A/checkpoints/best.tar"%finn.WS
 )
 
 

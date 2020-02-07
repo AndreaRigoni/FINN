@@ -5,6 +5,7 @@ import tempfile as tmp
 import numpy as np
 
 import finn.core.utils as cutil
+import finn
 from finn.backend.fpgadataflow.utils import numpy_to_hls_code
 from finn.core.datatype import DataType
 
@@ -53,9 +54,9 @@ def make_npy2apintstream_testcase(ndarray, dtype):
     with open(test_dir + "/test.cpp", "w") as f:
         f.write("\n".join(test_app_string))
     cmd_compile = """
-g++ -o test_npy2apintstream test.cpp /workspace/cnpy/cnpy.cpp \
--I/workspace/cnpy/ -I/workspace/vivado-hlslib -I/workspace/finn/src/finn/data/cpp \
---std=c++11 -lz"""
+g++ -o test_npy2apintstream test.cpp %s/cnpy/cnpy.cpp \
+-I%s/cnpy/ -I%s/vivado-hlslib -I%s/finn/src/finn/data/cpp \
+--std=c++11 -lz"""%finn.WS
     with open(test_dir + "/compile.sh", "w") as f:
         f.write(cmd_compile)
     compile = subprocess.Popen(

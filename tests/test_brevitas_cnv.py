@@ -4,6 +4,7 @@ import pkg_resources as pk
 import brevitas.onnx as bo
 import numpy as np
 import torch
+import finn
 from models.CNV import CNV
 
 import finn.core.onnx_exec as oxe
@@ -14,7 +15,7 @@ from finn.transformation.infer_shapes import InferShapes
 export_onnx_path = "test_output_cnv.onnx"
 # TODO get from config instead, hardcoded to Docker path for now
 trained_cnv_checkpoint = (
-    "/workspace/brevitas_cnv_lfc/pretrained_models/CNV_1W1A/checkpoints/best.tar"
+    "%s/brevitas_cnv_lfc/pretrained_models/CNV_1W1A/checkpoints/best.tar"%finn.WS
 )
 
 

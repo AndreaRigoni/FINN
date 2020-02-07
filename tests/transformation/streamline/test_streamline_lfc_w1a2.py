@@ -8,6 +8,7 @@ import onnx.numpy_helper as nph
 import torch
 from models.LFC import LFC
 
+import finn
 import finn.core.onnx_exec as oxe
 from finn.core.modelwrapper import ModelWrapper
 from finn.transformation.fold_constants import FoldConstants
@@ -18,7 +19,7 @@ from finn.transformation.streamline import Streamline
 export_onnx_path = "test_output_lfc.onnx"
 # TODO get from config instead, hardcoded to Docker path for now
 trained_lfc_w1a2_checkpoint = (
-    "/workspace/brevitas_cnv_lfc/pretrained_models/LFC_1W2A/checkpoints/best.tar"
+    "%s/brevitas_cnv_lfc/pretrained_models/LFC_1W2A/checkpoints/best.tar"%finn.WS
 )
 
 
