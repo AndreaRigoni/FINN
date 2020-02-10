@@ -19,13 +19,15 @@ def test_code_gen_trafo():
     inp = helper.make_tensor_value_info("inp", TensorProto.FLOAT, [1, mw])
     outp = helper.make_tensor_value_info("outp", TensorProto.FLOAT, [1, mh])
     node_inp_list = ["inp", "weights", "thresh"]
+    
     FCLayer_node = helper.make_node(
         "StreamingFCLayer_Batch",
         node_inp_list,
         ["outp"],
         domain="finn",
         backend="fpgadataflow",
-        code_gen_dir="",
+        name='andrea_test',
+        code_gen_dir_npysim="",
         executable_path="",
         resType="ap_resource_lut()",
         MW=mw,
@@ -52,7 +54,7 @@ def test_code_gen_trafo():
 
     model = model.transform(CodeGen_npysim())
     for node in model.graph.node:
-        code_gen_attribute = util.get_by_name(node.attribute, "code_gen_dir")
+        code_gen_attribute = util.get_by_name(node.attribute, "code_gen_dir_npysim")
         tmp_dir = code_gen_attribute.s.decode("UTF-8")
         assert os.path.isdir(
             tmp_dir

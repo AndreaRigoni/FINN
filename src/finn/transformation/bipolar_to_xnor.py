@@ -37,17 +37,20 @@ class ConvertBipolarMatMulToXnorPopcount(Transformation):
                     model.set_tensor_datatype(mm_weight, DataType.BINARY)
                     # find producing threshold node and adjust output to binary
                     mt = model.find_producer(mm_input)
-                    if mt is not None and mt.op_type == "MultiThreshold":
-                        bin_dt_attr = "BINARY".encode("utf-8")
-                        get_by_name(mt.attribute, "out_dtype").s = bin_dt_attr
-                        get_by_name(mt.attribute, "out_scale").f = 1.0
-                        get_by_name(mt.attribute, "out_bias").f = 0
-                        model.set_tensor_datatype(mm_input, DataType.BINARY)
+                    if mt is not None:
+                        if mt.op_type == "MultiThreshold":
+                            bin_dt_attr = "BINARY".encode("utf-8")
+                            get_by_name(mt.attribute, "out_dtype").s = bin_dt_attr
+                            get_by_name(mt.attribute, "out_scale").f = 1.0
+                            get_by_name(mt.attribute, "out_bias").f = 0
+                            model.set_tensor_datatype(mm_input, DataType.BINARY)
+                        else:
+                            raise Exception(
+                                """Requires Bipolar2Binary, not yet
+                                            implemented."""
+                            )
                     else:
-                        raise Exception(
-                            """Requires Bipolar2Binary, not yet
-                                        implemented."""
-                        )
+                        pass
                     # make new output node with correct shape
                     mm_out_shape = model.get_tensor_shape(mm_output)
                     xnorpcout = oh.make_tensor_value_info(

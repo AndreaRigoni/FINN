@@ -2,6 +2,7 @@ from abc import abstractmethod
 import numpy as np
 import os
 import subprocess
+import finn
 from finn.custom_op import CustomOp
 from finn.core.utils import CppBuilder, IPGenBuilder
 import finn.custom_op.fpgadataflow.templates
@@ -77,7 +78,7 @@ class HLSCustomOp(CustomOp):
         self.code_gen_dict["$PROJECTNAME$"] = ["project_{}".format(node.name)]
         self.code_gen_dict["$HWSRCDIR$"] = [code_gen_dir]
         self.code_gen_dict["$FPGAPART$"] = [fpgapart]
-        self.code_gen_dict["$FINNHLSLIBDIR$"] = ["/workspace/finn-hlslib"]
+        self.code_gen_dict["$FINNHLSLIBDIR$"] = ["%s/finn-hlslib"%finn.WS]
         self.code_gen_dict["$TOPFXN$"] = [node.name]
         self.code_gen_dict["$CLKPERIOD$"] = [str(clk)]
 
@@ -131,13 +132,13 @@ class HLSCustomOp(CustomOp):
         builder = CppBuilder()
         # to enable additional debug features please uncommand the next line
         # builder.append_includes("-DDEBUG")
-        builder.append_includes("-I/workspace/finn/src/finn/data/cpp")
-        builder.append_includes("-I/workspace/cnpy/")
-        builder.append_includes("-I/workspace/finn-hlslib")
+        builder.append_includes("-I%s/src/finn/data/cpp"%finn.WS)
+        builder.append_includes("-I%s/cnpy/"%finn.WS)
+        builder.append_includes("-I%s/finn-hlslib"%finn.WS)
         builder.append_includes("-I{}/include".format(os.environ["VIVADO_PATH"]))
         builder.append_includes("--std=c++11")
         builder.append_sources(code_gen_dir + "/*.cpp")
-        builder.append_sources("/workspace/cnpy/cnpy.cpp")
+        builder.append_sources("%s/cnpy/cnpy.cpp"%finn.WS)
         builder.append_includes("-lz")
         builder.set_executable_path(code_gen_dir + "/node_model")
         builder.build(code_gen_dir)
