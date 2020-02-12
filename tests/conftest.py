@@ -6,7 +6,7 @@
     Read more about conftest.py under:
     https://pytest.org/latest/plugins.html
 """
-
+import sys
 import pytest
 
 
@@ -15,7 +15,7 @@ def start_debug(port=3000, wait=False):
     try:
         import ptvsd
         # Allow other computers to attach to ptvsd at this IP address and port.
-        ptvsd.enable_attach(address=('*', port), redirect_output=True)
+        ptvsd.enable_attach(address=('*', port)) #, redirect_output=True
         # Pause the program until a remote debugger is attached
         if wait:
             ptvsd.wait_for_attach()
@@ -24,11 +24,18 @@ def start_debug(port=3000, wait=False):
         print('unable to set vs debugger')
 
 
+def start_netron(onnx_path, port=8081):
+    try:
+        import netron
+        netron.start(export_onnx_path, port=port, host="0.0.0.0")
+    except:
+        print('faild to load netron')
+
+
 def pytest_runtest_setup(item):
         # called for running each test 
-        print ("setting up", item)
-        start_debug(wait=False)
-        print ("setting up", item)
+        sys.dont_write_bytecode = True
+        start_debug(wait=True)
 
 
 

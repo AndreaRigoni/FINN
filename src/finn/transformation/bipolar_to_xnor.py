@@ -50,7 +50,10 @@ class ConvertBipolarMatMulToXnorPopcount(Transformation):
                                             implemented."""
                             )
                     else:
-                        pass
+                        raise Exception(
+                            """mt is Null"""
+                        )
+
                     # make new output node with correct shape
                     mm_out_shape = model.get_tensor_shape(mm_output)
                     xnorpcout = oh.make_tensor_value_info(

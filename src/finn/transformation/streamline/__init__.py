@@ -48,9 +48,10 @@ class Streamline(Transformation):
             Absorb1BitMulIntoMatMul(),
             RoundAndClipThresholds(),
         ]
-        for trn in streamline_transformations:
+        for i,trn in enumerate(streamline_transformations):
             model = model.transform(trn)
             model = model.transform(GiveUniqueNodeNames())
             model = model.transform(GiveReadableTensorNames())
             model = model.transform(InferDataTypes())
+            model.save('/tmp/streamline_out/'+str(i)+'.onnx')
         return (model, False)

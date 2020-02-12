@@ -11,4 +11,6 @@ finally:
     del get_distribution, DistributionNotFound
 
 import os
+
 WS = os.getenv('FINN_WS')
+VIVADO_HLS_INCLUDE = os.getenv('VIVADO_PATH')+'/include'

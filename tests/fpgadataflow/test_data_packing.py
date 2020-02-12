@@ -17,6 +17,7 @@ from finn.util.data_packing import (
 
 
 def make_npy2apintstream_testcase(ndarray, dtype):
+    print('caca')
     test_dir = cutil.make_build_dir(prefix="test_npy2apintstream_")
     shape = ndarray.shape
     elem_bits = dtype.bitwidth()
@@ -60,9 +61,9 @@ def make_npy2apintstream_testcase(ndarray, dtype):
     with open(test_dir + "/test.cpp", "w") as f:
         f.write("\n".join(test_app_string))
     cmd_compile = """
-g++ -o test_npy2apintstream test.cpp %s/cnpy/cnpy.cpp \
--I%s/cnpy/ -I%s/vivado-hlslib -I%s/finn/src/finn/data/cpp \
---std=c++11 -lz"""%finn.WS
+g++ -o test_npy2apintstream test.cpp {0}/cnpy/cnpy.cpp \
+-I{0}/cnpy/ -I{0}/finn-hlslib -I{1} -I{0}/src/finn/data/cpp \
+--std=c++11 -lz""".format(finn.WS, finn.VIVADO_HLS_INCLUDE)
     with open(test_dir + "/compile.sh", "w") as f:
         f.write(cmd_compile)
     compile = subprocess.Popen(
@@ -78,8 +79,8 @@ g++ -o test_npy2apintstream test.cpp %s/cnpy/cnpy.cpp \
     success = (produced == ndarray).all()
     # only delete generated code if test has passed
     # useful for debug otherwise
-    if success:
-        shutil.rmtree(test_dir)
+    # if success:
+    #     shutil.rmtree(test_dir)
     assert success
 
 
@@ -155,6 +156,12 @@ def test_finnpy_to_packed_bytearray():
     D = [[1, 7, 2, 5], [2, 5, 1, 7]]
     eD = np.asarray([[23, 37], [37, 23]], dtype=np.uint8)
     assert (finnpy_to_packed_bytearray(D, DataType.UINT4) == eD).all()
+    E = [[-4, 0, -4, -4]]
+    eE = np.asarray(
+        [[255, 255, 255, 252, 0, 0, 0, 0, 255, 255, 255, 252, 255, 255, 255, 252]],
+        dtype=np.uint8,
+    )
+    assert (finnpy_to_packed_bytearray(E, DataType.INT32) == eE).all()
 
 
 def test_packed_bytearray_to_finnpy():
@@ -178,3 +185,11 @@ def test_packed_bytearray_to_finnpy():
     eD = np.asarray(eD, dtype=np.float32)
     shapeD = eD.shape
     assert (packed_bytearray_to_finnpy(D, DataType.UINT4, shapeD) == eD).all()
+    E = np.asarray(
+        [[255, 255, 255, 252, 0, 0, 0, 0, 255, 255, 255, 252, 255, 255, 255, 252]],
+        dtype=np.uint8,
+    )
+    eE = [[-4, 0, -4, -4]]
+    eE = np.asarray(eE, dtype=np.float32)
+    shapeE = eE.shape
+    assert (packed_bytearray_to_finnpy(E, DataType.INT32, shapeE) == eE).all()

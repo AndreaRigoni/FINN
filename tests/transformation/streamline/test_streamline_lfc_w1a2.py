@@ -24,9 +24,7 @@ trained_lfc_w1a2_checkpoint = (
 
 
 def test_streamline_lfc_w1a2():
-    lfc = LFC(weight_bit_width=1, act_bit_width=2, in_bit_width=2).eval()
-    checkpoint = torch.load(trained_lfc_w1a2_checkpoint, map_location="cpu")
-    lfc.load_state_dict(checkpoint["state_dict"])
+    lfc = get_fc_model_trained("LFC", 1, 1)
     bo.export_finn_onnx(lfc, (1, 1, 28, 28), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     model = model.transform(InferShapes())
@@ -44,5 +42,5 @@ def test_streamline_lfc_w1a2():
     produced_ctx = oxe.execute_onnx(model, input_dict, True)
     produced = produced_ctx[model.graph.output[0].name]
     assert np.isclose(expected, produced, atol=1e-3).all()
-    model.save("lfc-w1a2-streamlined.onnx")
+#    model.save("lfc-w1a2-streamlined.onnx")
     os.remove(export_onnx_path)

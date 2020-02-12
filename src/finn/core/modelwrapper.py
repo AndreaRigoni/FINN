@@ -6,6 +6,7 @@ import onnx.numpy_helper as np_helper
 from onnx import TensorProto
 
 import finn.util.basic as util
+import finn.util.onnx as onnxutil
 from finn.core.datatype import DataType
 
 
@@ -113,6 +114,19 @@ class ModelWrapper:
             qa.tensor_name = tensor_name
             qa.quant_parameter_tensor_names.append(dt)
             qnt_annotations.append(qa)
+
+    def get_tensor_valueinfo(self, tensor_name):
+        """Returns ValueInfoProto of tensor with given name, if it has one."""
+        graph = self._model_proto.graph
+        vi_names = [(x.name, x) for x in graph.input]
+        vi_names += [(x.name, x) for x in graph.output]
+        vi_names += [(x.name, x) for x in graph.value_info]
+        try:
+            vi_ind = [x[0] for x in vi_names].index(tensor_name)
+            vi = vi_names[vi_ind][1]
+            return vi
+        except ValueError:
+            return None
 
     def get_tensor_shape(self, tensor_name):
         """Returns the shape of tensor with given name, if it has ValueInfoProto."""
@@ -248,14 +262,14 @@ class ModelWrapper:
         graph = self._model_proto.graph
         # make empty tensors for all the graph inputs and outputs
         for vi in graph.input:
-            new_tensor = util.valueinfo_to_tensor(vi)
+            new_tensor = onnxutil.valueinfo_to_tensor(vi)
             execution_context[vi.name] = new_tensor
         for vi in graph.output:
-            new_tensor = util.valueinfo_to_tensor(vi)
+            new_tensor = onnxutil.valueinfo_to_tensor(vi)
             execution_context[vi.name] = new_tensor
         # make empty tensors for all intermediate buffers
         for vi in graph.value_info:
-            new_tensor = util.valueinfo_to_tensor(vi)
+            new_tensor = onnxutil.valueinfo_to_tensor(vi)
             execution_context[vi.name] = new_tensor
         # fill in the constants provided by the initializers (TensorProto to npy)
         for t in graph.initializer:
