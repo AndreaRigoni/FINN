@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import tempfile as tmp
@@ -17,7 +18,6 @@ from finn.util.data_packing import (
 
 
 def make_npy2apintstream_testcase(ndarray, dtype):
-    print('caca')
     test_dir = cutil.make_build_dir(prefix="test_npy2apintstream_")
     shape = ndarray.shape
     elem_bits = dtype.bitwidth()
@@ -61,9 +61,11 @@ def make_npy2apintstream_testcase(ndarray, dtype):
     with open(test_dir + "/test.cpp", "w") as f:
         f.write("\n".join(test_app_string))
     cmd_compile = """
-g++ -o test_npy2apintstream test.cpp {0}/cnpy/cnpy.cpp \
--I{0}/cnpy/ -I{0}/finn-hlslib -I{1} -I{0}/src/finn/data/cpp \
---std=c++11 -lz""".format(finn.WS, finn.VIVADO_HLS_INCLUDE)
+g++ -o test_npy2apintstream test.cpp /workspace/cnpy/cnpy.cpp \
+-I/workspace/cnpy/ -I{}/include -I/workspace/finn/src/finn/data/cpp \
+--std=c++11 -lz""".format(
+        os.environ["VIVADO_PATH"]
+    )
     with open(test_dir + "/compile.sh", "w") as f:
         f.write(cmd_compile)
     compile = subprocess.Popen(
@@ -79,8 +81,8 @@ g++ -o test_npy2apintstream test.cpp {0}/cnpy/cnpy.cpp \
     success = (produced == ndarray).all()
     # only delete generated code if test has passed
     # useful for debug otherwise
-    # if success:
-    #     shutil.rmtree(test_dir)
+    if success:
+        shutil.rmtree(test_dir)
     assert success
 
 

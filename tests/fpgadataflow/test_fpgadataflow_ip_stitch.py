@@ -1,4 +1,5 @@
-import os.path
+# import os.path
+import os
 
 import pytest
 
@@ -10,6 +11,8 @@ from finn.core.modelwrapper import ModelWrapper
 from finn.transformation.fpgadataflow.codegen_ipgen import CodeGen_ipgen
 from finn.transformation.fpgadataflow.codegen_ipstitch import CodeGen_ipstitch
 from finn.transformation.fpgadataflow.hlssynth_ipgen import HLSSynth_IPGen
+from finn.transformation.fpgadataflow.insert_tlastmarker import InsertTLastMarker
+from finn.transformation.fpgadataflow.make_deployment import DeployToPYNQ
 from finn.transformation.fpgadataflow.make_pynq_driver import MakePYNQDriver
 from finn.transformation.fpgadataflow.make_pynq_proj import MakePYNQProject
 from finn.transformation.fpgadataflow.synth_pynq_proj import SynthPYNQProject
@@ -18,18 +21,13 @@ from finn.util.basic import (
     calculate_signed_dot_prod_range,
     gen_finn_dt_tensor,
     make_build_dir,
+    pynq_part_map,
 )
 
-# TODO control board/part for tests from a global place
-# settings for Ultra96
-test_fpga_part = "xczu3eg-sbva484-1-e"
-test_pynq_board = "Ultra96"
+test_pynq_board = os.getenv("PYNQ_BOARD", default="Pynq-Z1")
+test_fpga_part = pynq_part_map[test_pynq_board]
 
-# settings for PYNQ-Z1
-# test_fpga_part = "xc7z020clg400-1"
-# test_pynq_board = "Pynq-Z1"
-
-ip_stitch_model_dir = make_build_dir("test_fpgadataflow_ipstitch")
+ip_stitch_model_dir = make_build_dir("test_fpgadataflow_ipstitch_")
 
 
 def create_one_fc_model():
@@ -42,10 +40,11 @@ def create_one_fc_model():
     no_act = 1
     binary_xnor_mode = 0
     actval = 0
+    simd = 2
+    pe = 2
 
     inp = helper.make_tensor_value_info("inp", TensorProto.FLOAT, [1, m])
     outp = helper.make_tensor_value_info("outp", TensorProto.FLOAT, [1, m])
-    outp_tlast = helper.make_tensor_value_info("outp_tlast", TensorProto.FLOAT, [1, m])
 
     fc0 = helper.make_node(
         "StreamingFCLayer_Batch",
@@ -56,8 +55,8 @@ def create_one_fc_model():
         resType="ap_resource_lut()",
         MW=m,
         MH=m,
-        SIMD=m,
-        PE=m,
+        SIMD=simd,
+        PE=pe,
         inputDataType=idt.name,
         weightDataType=wdt.name,
         outputDataType=odt.name,
@@ -66,22 +65,8 @@ def create_one_fc_model():
         noActivation=no_act,
     )
 
-    tlastmarker = helper.make_node(
-        "TLastMarker",
-        ["outp"],
-        ["outp_tlast"],
-        domain="finn",
-        backend="fpgadataflow",
-        NumIters=1,
-        StreamWidth=odt.bitwidth() * m,
-    )
-
     graph = helper.make_graph(
-        nodes=[fc0, tlastmarker],
-        name="fclayer_graph",
-        inputs=[inp],
-        outputs=[outp_tlast],
-        value_info=[outp],
+        nodes=[fc0], name="fclayer_graph", inputs=[inp], outputs=[outp],
     )
 
     model = helper.make_model(graph, producer_name="fclayer-model")
@@ -89,7 +74,6 @@ def create_one_fc_model():
 
     model.set_tensor_datatype("inp", idt)
     model.set_tensor_datatype("outp", odt)
-    model.set_tensor_datatype("outp_tlast", odt)
     model.set_tensor_datatype("w0", wdt)
 
     # generate weights
@@ -110,11 +94,12 @@ def create_two_fc_model():
     actval = odt.min()
     no_act = 0
     binary_xnor_mode = 0
+    pe = 2
+    simd = 2
 
     inp = helper.make_tensor_value_info("inp", TensorProto.FLOAT, [1, m])
     mid = helper.make_tensor_value_info("mid", TensorProto.FLOAT, [1, m])
     outp = helper.make_tensor_value_info("outp", TensorProto.FLOAT, [1, m])
-    outp_tlast = helper.make_tensor_value_info("outp_tlast", TensorProto.FLOAT, [1, m])
 
     fc0 = helper.make_node(
         "StreamingFCLayer_Batch",
@@ -125,8 +110,8 @@ def create_two_fc_model():
         resType="ap_resource_lut()",
         MW=m,
         MH=m,
-        SIMD=1,
-        PE=1,
+        SIMD=simd,
+        PE=pe,
         inputDataType=idt.name,
         weightDataType=wdt.name,
         outputDataType=odt.name,
@@ -144,8 +129,8 @@ def create_two_fc_model():
         resType="ap_resource_lut()",
         MW=m,
         MH=m,
-        SIMD=1,
-        PE=1,
+        SIMD=simd,
+        PE=pe,
         inputDataType=idt.name,
         weightDataType=wdt.name,
         outputDataType=odt.name,
@@ -154,22 +139,12 @@ def create_two_fc_model():
         noActivation=no_act,
     )
 
-    tlastmarker = helper.make_node(
-        "TLastMarker",
-        ["outp"],
-        ["outp_tlast"],
-        domain="finn",
-        backend="fpgadataflow",
-        NumIters=m,
-        StreamWidth=2,
-    )
-
     graph = helper.make_graph(
-        nodes=[fc0, fc1, tlastmarker],
+        nodes=[fc0, fc1],
         name="fclayer_graph",
         inputs=[inp],
-        outputs=[outp_tlast],
-        value_info=[mid, outp],
+        outputs=[outp],
+        value_info=[mid],
     )
 
     model = helper.make_model(graph, producer_name="fclayer-model")
@@ -178,7 +153,6 @@ def create_two_fc_model():
     model.set_tensor_datatype("inp", idt)
     model.set_tensor_datatype("mid", idt)
     model.set_tensor_datatype("outp", odt)
-    model.set_tensor_datatype("outp_tlast", odt)
     model.set_tensor_datatype("w0", wdt)
     model.set_tensor_datatype("w1", wdt)
 
@@ -207,12 +181,13 @@ def create_two_fc_model():
 @pytest.mark.dependency()
 def test_fpgadataflow_ipstitch_gen_model():
     model = create_one_fc_model()
+    model = model.transform(InsertTLastMarker())
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(CodeGen_ipgen(test_fpga_part, 5))
     model = model.transform(HLSSynth_IPGen())
     assert model.graph.node[0].op_type == "StreamingFCLayer_Batch"
     # assert model.graph.node[1].op_type == "StreamingFCLayer_Batch"
-    assert model.graph.node[1].op_type == "TLastMarker"
+    assert model.graph.node[-1].op_type == "TLastMarker"
     model.save(ip_stitch_model_dir + "/test_fpgadataflow_ipstitch_gen_model.onnx")
 
 
@@ -255,8 +230,35 @@ def test_fpgadataflow_ipstitch_pynq_synth():
 @pytest.mark.dependency(depends=["test_fpgadataflow_ipstitch_pynq_projgen"])
 def test_fpgadataflow_ipstitch_pynq_driver():
     model = ModelWrapper(ip_stitch_model_dir + "/test_fpgadataflow_pynq_projgen.onnx")
-    model = model.transform(MakePYNQDriver(test_pynq_board))
+    model = model.transform(MakePYNQDriver())
     driver_dir = model.get_metadata_prop("pynq_driver_dir")
     assert driver_dir is not None
     assert os.path.isdir(driver_dir)
     model.save(ip_stitch_model_dir + "/test_fpgadataflow_ipstitch_pynq_driver.onnx")
+
+
+@pytest.mark.dependency(depends=["test_fpgadataflow_ipstitch_pynq_driver"])
+def test_fpgadataflow_ipstitch_pynq_deployment_folder():
+    model = ModelWrapper(
+        ip_stitch_model_dir + "/test_fpgadataflow_ipstitch_pynq_driver.onnx"
+    )
+    ip = "172.21.165.113"
+    username = "xilinx"
+    password = "xilinx"
+    target_dir = "/home/xilinx/" + os.environ["FINN_INST_NAME"]
+    model = model.transform(DeployToPYNQ(ip, username, password, target_dir))
+    pynq_ip = model.get_metadata_prop("pynq_ip")
+    pynq_username = model.get_metadata_prop("pynq_username")
+    pynq_password = model.get_metadata_prop("pynq_password")
+    pynq_target_dir = model.get_metadata_prop("pynq_target_dir")
+
+    assert pynq_ip == ip
+    assert pynq_username == username
+    assert pynq_password == password
+    assert pynq_target_dir == target_dir
+
+    deployment_dir = model.get_metadata_prop("pynq_deploy_dir")
+    assert deployment_dir is not None
+    assert os.path.isdir(deployment_dir)
+
+    model.save(ip_stitch_model_dir + "/test_fpgadataflow_ipstitch_pynq_deployment.onnx")

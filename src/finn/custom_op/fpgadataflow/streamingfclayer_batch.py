@@ -41,6 +41,9 @@ class StreamingFCLayer_Batch(HLSCustomOp):
             "binaryXnorMode": ("i", False, 0),
             # no-activation mode (produce accumulators)
             "noActivation": ("i", False, 0),
+            # input and output FIFO depths
+            "inFIFODepth": ("i", False, 0),
+            "outFIFODepth": ("i", False, 0),
         }
         my_attrs.update(super().get_nodeattr_types())
         return my_attrs
@@ -99,6 +102,7 @@ class StreamingFCLayer_Batch(HLSCustomOp):
             info_messages.append('Attribute backend should be set to "fpgadataflow"')
 
         # verify that all necessary attributes exist
+        # TODO collect automatically from get_nodeattr_types
         try:
             self.get_nodeattr("code_gen_dir_npysim")
             self.get_nodeattr("executable_path")
@@ -161,6 +165,7 @@ class StreamingFCLayer_Batch(HLSCustomOp):
         Y. Umuroglu, M. Leeser and K. Vissers
         - 12. Sep 2018
         """
+        # TODO add in/out FIFO contributions
         P = self.get_nodeattr("PE")
         Q = self.get_nodeattr("SIMD")
         wdt = self.get_weight_datatype()
@@ -178,6 +183,7 @@ class StreamingFCLayer_Batch(HLSCustomOp):
         Y. Umuroglu, M. Leeser and K. Vissers
         - 12. Sep 2018
         """
+        # TODO add in/out FIFO contributions
         P = self.get_nodeattr("PE")
         Q = self.get_nodeattr("SIMD")
         wdt = self.get_weight_datatype()
@@ -208,10 +214,21 @@ class StreamingFCLayer_Batch(HLSCustomOp):
         o_bits = self.get_output_datatype().bitwidth()
         return o_bits * self.get_nodeattr("PE")
 
-    def get_number_output_values(self):
+    def get_folded_input_shape(self):
+        mw = self.get_nodeattr("MW")
+        simd = self.get_nodeattr("SIMD")
+        sf = mw // simd
+        return (1, sf, simd)
+
+    def get_folded_output_shape(self):
         mh = self.get_nodeattr("MH")
         pe = self.get_nodeattr("PE")
-        return mh // pe
+        nf = mh // pe
+        return (1, nf, pe)
+
+    def get_number_output_values(self):
+        nf = self.get_folded_output_shape()[1]
+        return nf
 
     def get_template_param_values(self):
         ret = dict()
@@ -631,6 +648,17 @@ class StreamingFCLayer_Batch(HLSCustomOp):
     def pragmas(self):
         self.code_gen_dict["$PRAGMAS$"] = ["#pragma HLS INTERFACE axis port=in0"]
         self.code_gen_dict["$PRAGMAS$"].append("#pragma HLS INTERFACE axis port=out")
+        in_fifo_depth = self.get_nodeattr("inFIFODepth")
+        out_fifo_depth = self.get_nodeattr("outFIFODepth")
+        # insert depth pragmas only if specified
+        if in_fifo_depth != 0:
+            self.code_gen_dict["$PRAGMAS$"].append(
+                "#pragma HLS stream depth=%d variable=in0" % in_fifo_depth
+            )
+        if out_fifo_depth != 0:
+            self.code_gen_dict["$PRAGMAS$"].append(
+                "#pragma HLS stream depth=%d variable=out" % out_fifo_depth
+            )
         self.code_gen_dict["$PRAGMAS$"].append(
             "#pragma HLS INTERFACE ap_ctrl_none port=return"
         )
