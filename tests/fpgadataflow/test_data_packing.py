@@ -4,9 +4,8 @@ import subprocess
 import tempfile as tmp
 
 import numpy as np
-
-import finn.util.basic as cutil
 import finn
+import finn.util.basic as cutil
 from finn.core.datatype import DataType
 from finn.util.data_packing import (
     array2hexstring,
@@ -61,9 +60,10 @@ def make_npy2apintstream_testcase(ndarray, dtype):
     with open(test_dir + "/test.cpp", "w") as f:
         f.write("\n".join(test_app_string))
     cmd_compile = """
-g++ -o test_npy2apintstream test.cpp /workspace/cnpy/cnpy.cpp \
--I/workspace/cnpy/ -I{}/include -I/workspace/finn/src/finn/data/cpp \
+g++ -o test_npy2apintstream test.cpp {0}/cnpy/cnpy.cpp \
+-I{0}/cnpy/ -I{1}/include -I{0}/src/finn/data/cpp \
 --std=c++11 -lz""".format(
+        finn.WS,
         os.environ["VIVADO_PATH"]
     )
     with open(test_dir + "/compile.sh", "w") as f:

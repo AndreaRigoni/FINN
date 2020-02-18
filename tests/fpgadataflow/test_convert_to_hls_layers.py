@@ -14,7 +14,7 @@ import finn.transformation.fpgadataflow.convert_to_hls_layers as to_hls
 import finn.transformation.streamline.absorb as absorb
 from finn.core.modelwrapper import ModelWrapper
 from finn.custom_op.registry import getCustomOp
-# from finn.transformation.bipolar_to_xnor import ConvertBipolarMatMulToXnorPopcount
+from finn.transformation.bipolar_to_xnor import ConvertBipolarMatMulToXnorPopcount
 from finn.transformation.fold_constants import FoldConstants
 from finn.transformation.fpgadataflow.codegen_npysim import CodeGen_npysim
 from finn.transformation.fpgadataflow.compile import Compile
@@ -23,7 +23,7 @@ from finn.transformation.general import GiveReadableTensorNames, GiveUniqueNodeN
 from finn.transformation.infer_shapes import InferShapes
 from finn.transformation.streamline import Streamline
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
-from finn.util.test import get_fc_model_trained
+from finn.util.test import get_test_model_trained
 
 export_onnx_path = "test_output_lfc.onnx"
 # TODO get from config instead, hardcoded to Docker path for now
@@ -33,7 +33,7 @@ trained_lfc_checkpoint = (
 
 
 def test_convert_to_hls_layers_tfc_w1a1():
-    lfc = get_fc_model_trained("TFC", 1, 1)
+    lfc = get_test_model_trained("TFC", 1, 1)
     bo.export_finn_onnx(lfc, (1, 1, 28, 28), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     model = model.transform(InferShapes())

@@ -15,16 +15,13 @@ from finn.transformation.fold_constants import FoldConstants
 from finn.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames
 from finn.transformation.infer_shapes import InferShapes
 from finn.transformation.streamline import Streamline
+from finn.util.test import get_test_model_trained
 
 export_onnx_path = "test_output_lfc.onnx"
-# TODO get from config instead, hardcoded to Docker path for now
-trained_lfc_w1a2_checkpoint = (
-    "%s/brevitas_cnv_lfc/pretrained_models/LFC_1W2A/checkpoints/best.tar"%finn.WS
-)
 
 
 def test_streamline_lfc_w1a2():
-    lfc = get_fc_model_trained("LFC", 1, 1)
+    lfc = get_test_model_trained("LFC", 1, 1)
     bo.export_finn_onnx(lfc, (1, 1, 28, 28), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     model = model.transform(InferShapes())
@@ -42,5 +39,4 @@ def test_streamline_lfc_w1a2():
     produced_ctx = oxe.execute_onnx(model, input_dict, True)
     produced = produced_ctx[model.graph.output[0].name]
     assert np.isclose(expected, produced, atol=1e-3).all()
-#    model.save("lfc-w1a2-streamlined.onnx")
     os.remove(export_onnx_path)

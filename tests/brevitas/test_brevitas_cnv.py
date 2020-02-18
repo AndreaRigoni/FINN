@@ -11,16 +11,13 @@ import finn.core.onnx_exec as oxe
 from finn.core.modelwrapper import ModelWrapper
 from finn.transformation.fold_constants import FoldConstants
 from finn.transformation.infer_shapes import InferShapes
+from finn.util.test import get_test_model_trained, get_test_model_untrained
 
 export_onnx_path = "test_output_cnv.onnx"
-# TODO get from config instead, hardcoded to Docker path for now
-trained_cnv_checkpoint = (
-    "%s/brevitas_cnv_lfc/pretrained_models/CNV_1W1A/checkpoints/best.tar"%finn.WS
-)
 
 
 def test_brevitas_cnv_w1a1_export():
-    cnv = CNV(weight_bit_width=1, act_bit_width=1, in_bit_width=1, in_ch=3).eval()
+    cnv = get_test_model_untrained("CNV", 1, 1)
     bo.export_finn_onnx(cnv, (1, 3, 32, 32), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     assert model.graph.node[2].op_type == "Sign"
@@ -32,9 +29,7 @@ def test_brevitas_cnv_w1a1_export():
 
 
 def test_brevitas_cnv_w1a1_export_exec():
-    cnv = CNV(weight_bit_width=1, act_bit_width=1, in_bit_width=1, in_ch=3).eval()
-    checkpoint = torch.load(trained_cnv_checkpoint, map_location="cpu")
-    cnv.load_state_dict(checkpoint["state_dict"])
+    cnv = get_test_model_trained("CNV", 1, 1)
     bo.export_finn_onnx(cnv, (1, 3, 32, 32), export_onnx_path)
     model = ModelWrapper(export_onnx_path)
     model = model.transform(InferShapes())
@@ -54,11 +49,9 @@ def test_brevitas_cnv_w1a1_export_exec():
     os.remove(export_onnx_path)
 
 
-def test_brevitas_trained_cnv_w1a1_pytorch():
+def test_brevitas_cnv_w1a1_pytorch():
     # load pretrained weights into CNV-w1a1
-    cnv = CNV(weight_bit_width=1, act_bit_width=1, in_bit_width=1, in_ch=3).eval()
-    checkpoint = torch.load(trained_cnv_checkpoint, map_location="cpu")
-    cnv.load_state_dict(checkpoint["state_dict"])
+    cnv = get_test_model_trained("CNV", 1, 1)
     fn = pk.resource_filename("finn", "data/cifar10/cifar10-test-data-class3.npz")
     input_tensor = np.load(fn)["arr_0"]
     input_tensor = torch.from_numpy(input_tensor).float()

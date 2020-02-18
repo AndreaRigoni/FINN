@@ -32,10 +32,10 @@ def start_netron(onnx_path, port=8081):
         print('faild to load netron')
 
 
-def pytest_runtest_setup(item):
-        # called for running each test 
-        sys.dont_write_bytecode = True
-        start_debug(wait=True)
+# def pytest_runtest_setup(item):
+#         # called for running each test 
+#         sys.dont_write_bytecode = True
+#         start_debug(wait=False)
 
 
 
